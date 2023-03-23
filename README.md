@@ -109,5 +109,80 @@ public class Posemaker : MonoBehaviour
             check = false;
         }
     }
+    // Loads the saved wayspot anchor from location recognised
+public void SaveWayspotAnchors()
+    {
+      if (_wayspotAnchorTrackers.Count > 0)
+      {
+        var wayspotAnchors = WayspotAnchorService.GetAllWayspotAnchors();
+
+        // Only anchors that have successfully resolved can be saved
+       // var saveableAnchors = wayspotAnchors.Where(a => a.Status == WayspotAnchorStatusCode.Limited || a.Status == WayspotAnchorStatusCode.Success);
+        var payloads = wayspotAnchors.Select(a => a.Payload);
+
+        WayspotAnchorDataUtility.SaveLocalPayloads(payloads.ToArray());
+      }
+      else
+      {
+        WayspotAnchorDataUtility.SaveLocalPayloads(Array.Empty<WayspotAnchorPayload>());
+      }
+
+      _statusLog.text = $"Saved {_wayspotAnchorTrackers.Count} Wayspot Anchors.";
+    }
+
+// Loads the saved wayspot anchor from location recognised
+public static WayspotAnchorPayload[] LoadLocalPayloads()
+        {
+            var payloads = new List<WayspotAnchorPayload>();
+            if (localPayload != null)
+            {
+                var json = localPayload;
+                var wayspotAnchorsData = JsonUtility.FromJson<WayspotAnchorsData>(json);
+                foreach (var wayspotAnchorPayload in wayspotAnchorsData.Payloads)
+                {
+                  var payload = WayspotAnchorPayload.Deserialize(wayspotAnchorPayload);
+                  payloads.Add(payload);
+                }
+        	return payloads.ToArray();
+        }
+      else
+        {
+        	Debug.Log("No payloads were found to load.");
+        	return Array.Empty<WayspotAnchorPayload>();
+        }
+   	}
+
+// Loads the saved wayspot anchor from location recognised
+public void LoadWayspotAnchors()
+    {
+      var payloads = WayspotAnchorDataUtility.LoadLocalPayloads();
+      if (payloads.Length > 0)
+      {
+        foreach (var payload in payloads)
+        {
+          var anchors = WayspotAnchorService.RestoreWayspotAnchors(payload);
+          if (anchors.Length == 0)
+            return; // error raised in CreateWayspotAnchors
+
+          CreateWayspotAnchorGameObject(anchors[0], Vector3.zero, Quaternion.identity, false);
+        }
+
+        _statusLog.text = $"Loaded {_wayspotAnchorTrackers.Count} anchors.";
+      }
+      else
+      {
+        _statusLog.text = "No anchors to load.";
+      }
+    }
+// Loads the saved wayspot anchor from location recognised
+public static void SaveLocalPayloads(WayspotAnchorPayload[] wayspotAnchorPayloads)
+      {
+        var wayspotAnchorsData = new WayspotAnchorsData();
+        GetCoroutine();
+        wayspotAnchorsData = JsonUtility.FromJson<WayspotAnchorsData>(localPayload);
+        wayspotAnchorsData.Payloads = wayspotAnchorPayloads.Select(a => a.Serialize()).ToArray();
+        string wayspotAnchorsJson = JsonUtility.ToJson(wayspotAnchorsData);
+        SetCoroutine(wayspotAnchorsJson);
+      }
 }
 
