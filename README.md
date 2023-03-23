@@ -1,9 +1,12 @@
 # VR
-
+//Call
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Windows.Speech;
 
 public class Posemaker : MonoBehaviour
 {
@@ -15,6 +18,14 @@ public class Posemaker : MonoBehaviour
     [SerializeField] GameObject textCanvas,textPanel;
     private Vector3  objectDirection,objectLocation;
     [SerializeField] Button HelpButton;
+    [SerializeField]
+    private Text m_Hypotheses;
+    private string desiredIntent = "Helping in Switching on Moniter";
+
+    [SerializeField]
+    private Text m_Recognitions;
+    private DictationRecognizer m_DictationRecognizer;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -25,12 +36,35 @@ public class Posemaker : MonoBehaviour
         textCanvas = GameObject.FindGameObjectWithTag("MainARCanvas");
         HelpButton = GameObject.FindGameObjectWithTag("Help").GetComponent<Button>();
         textPanel = GameObject.FindGameObjectWithTag("MainARCanvas").transform.GetChild(0).gameObject;
-    }
+        
 
+
+        m_DictationRecognizer = new DictationRecognizer();
+
+        m_DictationRecognizer.DictationResult += (text, confidence) =>
+        {
+            Debug.LogFormat("Dictation result: {0}", text);
+             m_Recognitions.text = text;
+        };
+
+        m_DictationRecognizer.DictationHypothesis += (text) =>
+        {
+            Debug.LogFormat("Dictation hypothesis: {0}", text);
+            m_Hypotheses.text = text;
+        };
+
+        m_DictationRecognizer.Start();
+
+
+    }
+  
     // Update is called once per frame
     void Update()
     {
-        IntentExecution();
+        if (m_Recognitions.text.Contains(desiredIntent))
+        {
+            IntentExecution();
+        }
     }
     // Humanoid Intent Execution in 3D and AR Space
     public void IntentExecution()
@@ -77,3 +111,4 @@ public class Posemaker : MonoBehaviour
         }
     }
 }
+
